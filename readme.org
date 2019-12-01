@@ -1,20 +1,94 @@
 * Sword2Offer
-** DONE 1. 二维数组中的查找
-** DONE 2. 替换空格
+** ✔ 1. 二维数组中的查找
+- 类似二分查找
+#+BEGIN_SRC java
+public boolean Find(int target, int[][] matrix) {
+    if (matrix == null || matrix.length == 0 || matrix[0].length == 0)
+        return false;
+    int rows = matrix.length, cols = matrix[0].length;
+    int r = 0, c = cols - 1; // 从右上角开始
+    while (r <= rows - 1 && c >= 0) {
+        if (target == matrix[r][c])
+            return true;
+        else if (target > matrix[r][c])
+            r++;
+        else
+            c--;
+    }
+    return false;
+}
+#+END_SRC
+** ✔ 2. 替换空格
 循环遍历替换空格
-** DONE 3. 从尾到头打印链表
-遍历打印
-** DONE 4. 重建二叉树
-** DONE 5. 用俩个栈实现队列
+** ✔ 3. 从尾到头打印链表
+-  递归
+#+BEGIN_SRC go
+  func PrintListTailToHead(listNode *Node) {
+          //for current := listNode; current != nil; current = current.Next {
+          //	fmt.Print(current.Data, ", ")
+          //}
+          if listNode != nil {
+                  PrintListTailToHead(listNode.Next)
+                  fmt.Print(",")
+                  fmt.Print(listNode.Data)
+          }
+  }
+
+#+END_SRC
+- 头插入node法
+- 栈
+** ⚑ 4. 重建二叉树
+
+#+BEGIN_SRC java
+  // 缓存中序遍历数组每个值对应的索引
+  private Map<Integer, Integer> indexForInOrders = new HashMap<>();
+
+  public TreeNode reConstructBinaryTree(int[] pre, int[] in) {
+      for (int i = 0; i < in.length; i++)
+          indexForInOrders.put(in[i], i);
+      return reConstructBinaryTree(pre, 0, pre.length - 1, 0);
+  }
+
+  private TreeNode reConstructBinaryTree(int[] pre, int preL, int preR, int inL) {
+      if (preL > preR)
+          return null;
+      TreeNode root = new TreeNode(pre[preL]);
+      int inIndex = indexForInOrders.get(root.val);
+      int leftTreeSize = inIndex - inL;
+      root.left = reConstructBinaryTree(pre, preL + 1, preL + leftTreeSize, inL);
+      root.right = reConstructBinaryTree(pre, preL + leftTreeSize + 1, preR, inL + leftTreeSize + 1);
+      return root;
+  }
+#+END_SRC
+** ✔ 5. 用俩个栈实现队列
 - 反反为正
 - 一个栈负责存 直接压入
 - 另一个在读取的时候如果不为空直接弹出，为空则从第一个栈全部弹出 并压入
-** DONE 6. 旋转数组的最小数字
-** DONE 7. 斐波那且数列
-** DONE 8. 跳台阶
-** DONE 9. 变态跳台阶
-** DONE 10. 矩阵覆盖
-** DONE 11. 二进制中1的个数
+  #+BEGIN_SRC java
+     Stack<Integer> in = new Stack<Integer>();
+    Stack<Integer> out = new Stack<Integer>();
+
+    public void push(int node) {
+        in.push(node);
+    }
+
+    public int pop() throws Exception {
+        if (out.isEmpty())
+            while (!in.isEmpty())
+                out.push(in.pop());
+
+        if (out.isEmpty())
+            throw new Exception("queue is empty");
+
+        return out.pop();
+    } 
+  #+END_SRC
+** ✔ 6. 旋转数组的最小数字
+** ✔ 7. 斐波那且数列
+** ✔ 8. 跳台阶
+** ✔ 9. 变态跳台阶
+** ✔ 10. 矩阵覆盖
+** ✔ 11. 二进制中1的个数
 n & (n-1)知道n = 0
 ** ⚑ 12. 矩阵中的路径
 - 回溯法
