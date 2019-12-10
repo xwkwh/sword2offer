@@ -90,16 +90,238 @@ public boolean Find(int target, int[][] matrix) {
 ** ✔ 10. 矩阵覆盖
 ** ✔ 11. 二进制中1的个数
 n & (n-1)知道n = 0
-** ⚑ 12. 矩阵中的路径
+** ✔ 12. 矩阵中的路径
 - 回溯法
-** ⚑ 13. 机器人的运动路径  
-** ⚑ 14. 剪绳子
+#+BEGIN_SRC java
+  // 定义要搜索的四个方向，再循环遍历中递归扫描
+  private final static int[][] next = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}};
+  private int rows;
+  private int cols;
+
+  public boolean hasPath(char[] array, int rows, int cols, char[] str) {
+      if (rows == 0 || cols == 0) return false;
+      this.rows = rows;
+      this.cols = cols;
+      // 标记矩阵，标记一次搜索中的状态，so搜索完成后要清除
+      boolean[][] marked = new boolean[rows][cols];
+      char[][] matrix = buildMatrix(array);
+      for (int i = 0; i < rows; i++)
+          for (int j = 0; j < cols; j++)
+              if (backtracking(matrix, str, marked, 0, i, j))
+                  return true;
+
+      return false;
+  }
+
+  // 这个递归的参数
+  // 1. 矩阵本身 --- 要搜索的基数
+  // 2. 目标字符串 --- 目标
+  // 3. 标记矩阵 --- 保存状态的数组，跟随递归遍历
+  // 4. 当前遍历的索引 -- 即要遍历的目标元素
+  // 5. r,c 遍历的位置
+  private boolean backtracking(char[][] matrix, char[] str,
+                               boolean[][] marked, int pathLen, int r, int c) {
+      // 成功的条件
+      if (pathLen == str.length) return true;
+      // 失败的各种case
+      if (r < 0 || r >= rows || c < 0 || c >= cols
+              || matrix[r][c] != str[pathLen] || marked[r][c]) {
+
+          return false;
+      }
+
+      // 不确定的情况
+      // 当前的元素可以确定，但是后面还得再看 所以通过next 上下左右遍历
+      marked[r][c] = true;
+      for (int[] n : next)
+          if (backtracking(matrix, str, marked, pathLen + 1, r + n[0], c + n[1]))
+              return true;
+      marked[r][c] = false;
+      return false;
+  }
+
+  private char[][] buildMatrix(char[] array) {
+      char[][] matrix = new char[rows][cols];
+      for (int r = 0, idx = 0; r < rows; r++)
+          for (int c = 0; c < cols; c++)
+              matrix[r][c] = array[idx++];
+      return matrix;
+  }
+
+#+END_SRC
+** ✔ 13. 机器人的运动路径  
+- 深度优先遍历（DFS）
+  回溯是深度优先搜索的一种特例，它在一次搜索过程中需要设置一些本次搜索过程的局部状态，并在本次搜索结束之后清除状态。
+  而普通的深度优先搜索并不需要使用这些局部状态，虽然还是有可能设置一些全局状态。
+  #+BEGIN_SRC java
+    private static final int[][] next = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}};
+    private int cnt = 0;
+    private int rows;
+    private int cols;
+    private int threshold;
+    private int[][] digitSum;
+
+    public int movingCount(int threshold, int rows, int cols) {
+        this.rows = rows;
+        this.cols = cols;
+        this.threshold = threshold;
+        initDigitSum();
+        boolean[][] marked = new boolean[rows][cols];
+        dfs(marked, 0, 0);
+        return cnt;
+    }
+
+    private void dfs(boolean[][] marked, int r, int c) {
+        // 失败的条件 终止一次递归
+        if (r < 0 || r >= rows || c < 0 || c >= cols || marked[r][c])
+            return;
+        marked[r][c] = true;
+        // 达到提米要求的条件，返回终止这次递归
+        if (this.digitSum[r][c] > this.threshold)
+            return;
+        // 因为要算路径里包含的步数 所以没有成功就继续往下走不返回
+        cnt++;
+        for (int[] n : next)
+            dfs(marked, r + n[0], c + n[1]);
+    }
+
+    private void initDigitSum() {
+        int[] digitSumOne = new int[Math.max(rows, cols)];
+        for (int i = 0; i < digitSumOne.length; i++) {
+            int n = i;
+            while (n > 0) {
+                digitSumOne[i] += n % 10;
+                n /= 10;
+            }
+        }
+        this.digitSum = new int[rows][cols];
+        for (int i = 0; i < this.rows; i++)
+            for (int j = 0; j < this.cols; j++)
+                this.digitSum[i][j] = digitSumOne[i] + digitSumOne[j];
+    }
+  #+END_SRC
+  #+BEGIN_SRC go
+
+    /**
+     广度优先算法遍历
+    0
+
+    0 0
+    0
+
+    0 0 0
+    0 0
+    0
+    ,*/
+    func movingCount(threshold, rows, cols int) int {
+            bound := []int{rows, cols}
+            // 保存所有步
+            steps := [][]int{}
+
+            // 存放当前探索出所有的步
+            queue := [][]int{{0, 0}}
+
+            // 上，左，下，右
+            dirs := [][]int{{-1, 0}, {0, 1}, {1, 0}, {0, -1}}
+
+            for len(queue) > 0 {
+                    // 走一步
+                    current := queue[0]
+                    queue = queue[1:]
+                    if outOfBounds(current, bound) {
+                            continue
+                    }
+                    if biggerThanThreshold(current, threshold) {
+                            continue
+                    }
+                    if alreadyPassed(current, steps) {
+                            continue
+                    }
+                    steps = append(steps, current)
+                    // 探索四个方向
+                    for _, dir := range dirs {
+                            newStep := []int{current[0] + dir[0], current[1] + dir[1]}
+                            queue = append(queue, newStep)
+                    }
+            }
+            return len(steps)
+    }
+
+    // 出界了
+    func outOfBounds(step []int, bound []int) bool {
+            if step[0] < 0 || step[1] < 0 || step[0] >= bound[0] || step[1] >= bound[1] {
+                    return true
+            }
+            return false
+    }
+
+    // 大于 threshold 值
+    func biggerThanThreshold(step []int, threshold int) bool {
+            i, j := step[0], step[1]
+            k := 0
+            for i > 0 {
+                    k += i % 10
+                    i /= 10
+            }
+            for j > 0 {
+                    k += j % 10
+                    j /= 10
+            }
+            if k > threshold {
+                    return true
+            }
+
+            return false
+    }
+
+    // 是否是以走过的路
+    func alreadyPassed(step []int, steps [][]int) bool {
+            for _, item := range steps {
+                    if step[0] == item[0] && step[1] == item[1] {
+                            return true
+                    }
+            }
+            return false
+    }
+
+  #+END_SRC
+** ✔ 14. 剪绳子
+- DP
+#+BEGIN_SRC java
+  public int integerBreak(int n) {
+      int[] dp = new int[n + 1];
+      dp[1] = 1;
+      for (int i = 2; i <= n; i++)
+          for (int j = 1; j < i; j++)
+              dp[i] = Math.max(dp[i], Math.max(j * (i - j), dp[j] * (i - j)));
+      return dp[n];
+  }
+#+END_SRC
+- 贪心
+  尽可能多剪长度为 3 的绳子，并且不允许有长度为 1 的绳子出现。如果出现了，就从已经切好长度为 3 的绳子中拿出一段与长度为 1 的绳子重新组合，把它们切成两段长度为 2 的绳子。
+  证明：当 n >= 5 时，3(n - 3) - n = 2n - 9 > 0，且 2(n - 2) - n = n - 4 > 0。因此在 n >= 5 的情况下，将绳子剪成一段为 2 或者 3，得到的乘积会更大。
+  又因为 3(n - 3) - 2(n - 2) = n - 5 >= 0，所以剪成一段长度为 3 比长度为 2 得到的乘积更大。
+#+BEGIN_SRC java
+  public int integerBreak(int n) {
+      if (n < 2)
+          return 0;
+      if (n == 2)
+          return 1;
+      if (n == 3)
+          return 2;
+      int timesOf3 = n / 3;
+      if (n - timesOf3 * 3 == 1)
+          timesOf3--;
+      int timesOf2 = (n - timesOf3 * 3) / 2;
+      return (int) (Math.pow(3, timesOf3)) * (int) (Math.pow(2, timesOf2));
+  }
+#+END_SRC
 ** ✔ 15. 数值的整数次方
 - 乘法结合率 减少时间复杂度
 ** ⚑ 16. 打印从1到最大的n位数
 ** ✔ 17. 在O（1）的时间复杂度删除链表节点
 - 不删除这个节点 把他的下一个节点赋值给他 把下一个节点干掉 相当于干掉了自己
-** ⚑ 18. 删除链表中重复的节点
+** ✔ 18. 删除链表中重复的节点
 - 递归
 #+BEGIN_SRC go
 func deleteDuplication(pHead *Node) *Node {
@@ -156,6 +378,22 @@ func FindKthToTail2(pListHead *Node, k int) *Node {
   - 先快一倍，到相遇
   - x+2y +z = 2(x+y) --> x==z
   - 放回原点 同样的速度走再相遇即是入口
+- 切断指针
+  #+BEGIN_SRC go
+    /*
+    使用断链法，在当前结点访问完毕后，断掉指向当前结点的指针。因此，最后一个被访问的结点一定是入口结点。
+    ,*/
+    func EntryNodeOfLoop4(pHead *Node) *Node {
+            n := pHead
+            for n.Next != nil {
+                    tmp := n
+                    n = n.Next
+                    tmp.Next = nil
+            }
+            return n
+    }
+
+  #+END_SRC
 ** ✔ 24. 反转链表
 - 递归
 #+BEGIN_SRC go
@@ -364,7 +602,7 @@ boolean isSymmetrical(TreeNode t1, TreeNode t2) {
       return stack.isEmpty();
   }
 #+END_SRC
-** ⚑ 32. 打印二叉树
+** ✔ 32. 打印二叉树
 - [X]  从上往下打印二叉树 (层次遍历)
   使用队列来进行层次遍历。
 
@@ -440,7 +678,7 @@ boolean isSymmetrical(TreeNode t1, TreeNode t2) {
           return ret;
       }
     #+END_SRC
-** ⚑ 33. 二叉搜索树的后序遍历序列 
+** ✔ 33. 二叉搜索树的后序遍历序列 
 二叉查找树（Binary Search Tree），（又：二叉搜索树，二叉排序树）它或者是一棵空树，或者是具有下列性质的二叉树： 
 - 若它的左子树不空，则左子树上所有结点的值均小于它的根结点的值；
 - 若它的右子树不空，则右子树上所有结点的值均大于它的根结点的值；
@@ -761,7 +999,7 @@ boolean isSymmetrical(TreeNode t1, TreeNode t2) {
 
 #+END_SRC
 ** ⚑ 44. 数字序列中的某一位数字
-** ⚑ 45. 把数组排成最小的数.md
+** ✔ 45. 把数组排成最小的数.md
 可以看成是一个排序问题，在比较两个字符串 S1 和 S2 的大小时，应该比较的是 S1+S2 和 S2+S1 的大小，如果 S1+S2 < S2+S1，那么应该把 S1 排在前面，否则应该把 S2 排在前面。
 #+BEGIN_SRC java
   public String PrintMinNumber(int[] numbers) {
@@ -1364,7 +1602,7 @@ public int LastRemaining_Solution(int n, int m) {
 }
 
 #+END_SRC
-** ⚑ 63. 股票的最大利润
+** ✔ 63. 股票的最大利润
 使用贪心策略，假设第 i 轮进行卖出操作，买入操作价格应该在 i 之前并且价格最低。
 #+BEGIN_SRC java
   public int maxProfit(int[] prices) {
